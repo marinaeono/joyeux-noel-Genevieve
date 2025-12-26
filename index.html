@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Noël</title>
+
+<!-- POLICES -->
+<link href="https://fonts.googleapis.com/css2?family=PT+Sans+Narrow&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "PT Sans Narrow";
+  background: url("image/traineau.jpg") no-repeat center center fixed;
+  background-size: cover;
+}
+
+/* TITRE */
+h1 {
+  text-align: center;
+  margin: 20px;
+  color: white;
+  text-shadow: 4px 4px 10px black;
+  position: relative;
+  z-index: 300;
+}
+
+/* CALENDRIER (Père Noël) */
+#calendrier {
+  display: grid;
+  grid-template-columns: repeat(1, 150px);
+  justify-content: center;
+  margin: auto;
+  width: 100%;
+  position: relative;
+  z-index: 200; /* IMPORTANT : Père Noël devant tout */
+}
+
+.porte {
+  width: 150px;
+  height: 150px;
+  cursor: pointer;
+  position: relative;
+  z-index: 200;
+}
+
+.porte-face {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.7);
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.porte-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* FINALE */
+#finale {
+  display: none;
+  visibility: hidden;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  text-align: center;
+  z-index: 400;
+}
+
+/* TEXTE DEVANT TOUT */
+#finale h1,
+.finale-texte {
+  position: relative;
+  z-index: 500;
+}
+
+/* JOYEUX NOËL STYLE CINÉMA */
+#finale h1 {
+  font-family: 'Playfair Display', serif;
+  margin-top: 28%;
+  font-size: 4em;
+  color: #ffd700;
+  text-shadow:
+    0 0 20px black,
+    0 0 40px black,
+    0 0 60px gold,
+    0 0 80px gold;
+}
+
+/* TEXTE DU BAS */
+.finale-texte {
+  font-family: 'Playfair Display', serif;
+  color: gold;
+  font-size: 2em;
+  margin-top: 7%;
+  text-shadow:
+    0 0 10px black,
+    0 0 20px gold;
+}
+
+#etoile-fermeture {
+  cursor: pointer;
+  font-size: 1.5em;
+  margin-left: 10px;
+}
+
+/* VIDEO FINALE */
+#video-noel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70vw;
+  max-width: 900px;
+  display: none;
+  z-index: 450;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(255,255,255,0.8);
+}
+
+/* FEUX D’ARTIFICE */
+canvas#fireworks {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 460;
+}
+
+/* NEIGE DERRIÈRE TOUT */
+canvas#snow-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1; /* IMPORTANT : derrière tout */
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎄 Cliquez sur le Père Noël 🎄</h1>
+<div id="calendrier"></div>
+
+<!-- FINALE -->
+<div id="finale">
+  <h1>✨ JOYEUX NOËL ! ✨</h1>
+  <div class="finale-texte">
+    ✨ A tous les habitants du Manoir du Tertre ✨<br>
+    ✨ Vive Geneviève !  ✨
+    <span id="etoile-fermeture">✨</span>
+  </div>
+
+  <audio id="musique" src="son/noel.mp3" preload="auto"></audio>
+  <canvas id="fireworks"></canvas>
+
+ 
+<video id="video-noel" src="video/traineauciel.mp4" preload="auto" muted></video>
+
+
+</div>
+
+<!-- Neige -->
+<canvas id="snow-canvas"></canvas>
+
+<script>
+/* ===============================
+   CRÉATION DU PÈRE NOËL
+================================ */
+const calendrier = document.getElementById("calendrier");
+
+const porte = document.createElement("div");
+porte.className = "porte";
+
+const face = document.createElement("div");
+face.className = "porte-face";
+
+const img = document.createElement("img");
+img.src = "image/perenoel.jpg";
+img.alt = "Père Noël";
+
+face.appendChild(img);
+porte.appendChild(face);
+calendrier.appendChild(porte);
+
+/* ===============================
+   CLIC → FINALE
+================================ */
+porte.onclick = () => {
+  lancerFinale();
+};
+
+/* ===============================
+   FINALE
+================================ */
+let finaleActive = false;
+let fireworksInterval = null;
+let fireworksAnimationId = null;
+
+function lancerFinale() {
+  if (finaleActive) return;
+  finaleActive = true;
+
+  const finale = document.getElementById("finale");
+  finale.style.display = "block";
+  finale.style.visibility = "visible";
+
+  porte.style.display = "none";
+
+  const musique = document.getElementById("musique");
+  musique.currentTime = 0;
+  musique.play();
+
+  const videoFinale = document.getElementById("video-noel");
+  videoFinale.style.display = "block";
+  videoFinale.currentTime = 0;
+  videoFinale.play();
+  videoFinale.playbackRate = 1.8;
+
+  const canvas = document.getElementById("fireworks");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const fireworks = [];
+
+  function Firework(x, y) {
+    this.particles = Array.from({ length: 100 }, () => ({
+      x, y,
+      dx: (Math.random() - 0.5) * 10,
+      dy: (Math.random() - 0.5) * 10,
+      life: 100
+    }));
+  }
+
+  fireworksInterval = setInterval(() => {
+    fireworks.push(new Firework(
+      Math.random() * canvas.width,
+      Math.random() * canvas.height / 2
+    ));
+  }, 900);
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    fireworks.forEach(f =>
+      f.particles.forEach(p => {
+        ctx.globalAlpha = p.life / 100;
+
+        /* FEUX MULTICOLORES */
+        const colors = ["gold", "red", "orange", "white", "yellow", "blue", "purple", "cyan"];
+        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+
+        ctx.fillRect(p.x, p.y, 7, 7);
+        p.x += p.dx;
+        p.y += p.dy;
+        p.life--;
+      })
+    );
+
+    ctx.globalAlpha = 1;
+    fireworksAnimationId = requestAnimationFrame(animate);
+  }
+
+  animate();
+}
+
+/* ===============================
+   FERMETURE
+================================ */
+document.getElementById("etoile-fermeture").onclick = () => {
+  const finale = document.getElementById("finale");
+  finale.style.display = "none";
+  finale.style.visibility = "hidden";
+
+  const musique = document.getElementById("musique");
+  musique.pause();
+  musique.currentTime = 0;
+
+  const videoFinale = document.getElementById("video-noel");
+  videoFinale.pause();
+  videoFinale.currentTime = 0;
+  videoFinale.style.display = "none";
+
+  clearInterval(fireworksInterval);
+  cancelAnimationFrame(fireworksAnimationId);
+
+  porte.style.display = "block";
+
+  finaleActive = false;
+};
+
+/* ===============================
+   NEIGE
+================================ */
+const snowCanvas = document.getElementById("snow-canvas");
+const snowCtx = snowCanvas.getContext("2d");
+
+function resizeSnow() {
+  snowCanvas.width = window.innerWidth;
+  snowCanvas.height = window.innerHeight;
+}
+resizeSnow();
+window.addEventListener("resize", resizeSnow);
+
+const flakes = [];
+for (let i = 0; i < 150; i++) {
+  flakes.push({
+    x: Math.random() * snowCanvas.width,
+    y: Math.random() * snowCanvas.height,
+    size: Math.random() * 4 + 1,
+    speed: Math.random() * 2 + 1
+  });
+}
+
+function animateSnow() {
+  snowCtx.clearRect(0, 0, snowCanvas.width, snowCanvas.height);
+
+  flakes.forEach(flake => {
+    flake.y += flake.speed;
+
+    if (flake.y > snowCanvas.height) {
+      flake.x = Math.random() * snowCanvas.width;
+      flake.y = -10;
+    }
+
+    snowCtx.fillStyle = "white";
+    snowCtx.beginPath();
+    snowCtx.arc(flake.x, flake.y, flake.size, 0, Math.PI * 2);
+    snowCtx.fill();
+  });
+
+  requestAnimationFrame(animateSnow);
+}
+
+animateSnow();
+</script>
+
+</body>
+</html>
